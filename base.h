@@ -72,9 +72,6 @@ struct base<T, true> {
   }
 
   constexpr void reset() {
-    if (is_present) {
-      data.~T();
-    }
     is_present = false;
   }
 };
