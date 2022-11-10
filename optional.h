@@ -1,6 +1,7 @@
 #pragma once
 
 #include "move.h"
+#include "assign_base.h"
 
 template <typename T>
 struct optional : trivial_move_assign_base<T>,
@@ -8,7 +9,6 @@ struct optional : trivial_move_assign_base<T>,
                   move_assign_base<T> {
   using trivial_move_assign_base<T>::trivial_move_assign_base;
 
-  //constexpr optional() = default;
   constexpr explicit optional(T x) : trivial_move_assign_base<T>(in_place, std::move(x)) {};
 
   constexpr optional(const optional&) = default;
