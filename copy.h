@@ -33,8 +33,7 @@ struct trivial_copy_assign_base : trivial_copy_constructable_base<T> {
       if (other.is_present) {
         this->data = other.data;
       } else {
-        this->data.~T();
-        this->is_present = false;
+        this->reset();
       }
     } else {
       if (other.is_present) {

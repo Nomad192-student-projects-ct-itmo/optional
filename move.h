@@ -39,8 +39,7 @@ struct trivial_move_assign_base : trivial_move_constructable_base<T> {
       if (other.is_present) {
         this->data = std::move(other.data);
       } else {
-        this->data.~T();
-        this->is_present = false;
+        this->reset();
       }
     } else {
       if (other.is_present) {
