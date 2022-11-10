@@ -78,7 +78,7 @@ struct trivial_copy_constructable_base : base<T> {
       const trivial_copy_constructable_base& other)
       : base<T>() { ///////////!!!!!!!!!!!!!!!!!!!!!!
     if (other.is_present) {
-      std::construct_at(&this->data, other.data);
+      new (&this->data) T(other.data);
       this->is_present = true;
     }
   }
@@ -120,7 +120,7 @@ struct trivial_copy_assign_base : trivial_copy_constructable_base<T> {
       }
     } else {
       if (other.is_present) {
-        std::construct_at(&this->data, other.data);
+        new (&this->data) T(other.data);
         this->is_present = true;
       }
     }
@@ -149,7 +149,7 @@ struct trivial_move_constructable_base : trivial_copy_assign_base<T> {
   constexpr trivial_move_constructable_base(
       trivial_move_constructable_base&& other) {
     if (other.is_present) {
-      std::construct_at(&this->data, std::move(other.data));
+      new (&this->data) T(std::move(other.data));
       this->is_present = true;
     }
   }
@@ -193,7 +193,7 @@ struct trivial_move_assign_base : trivial_move_constructable_base<T> {
       }
     } else {
       if (other.is_present) {
-        std::construct_at(&this->data, std::move(other.data));
+        new (&this->data) T(std::move(other.data));
         this->is_present = true;
       }
     }
