@@ -4,10 +4,10 @@
 #include <utility>
 
 struct nullopt_t {};
-const nullopt_t nullopt{};      /// inline? cppreference
+inline const nullopt_t nullopt{};      /// inline? cppreference
 
 struct in_place_t {};
-const in_place_t in_place{};    /// inline? cppreference
+inline const in_place_t in_place{};    /// inline? cppreference
 
 template <typename T, bool trivial = std::is_trivially_destructible_v<T>>
 struct base {
