@@ -4,10 +4,10 @@
 #include <utility>
 
 struct nullopt_t {};
-inline const nullopt_t nullopt{};      /// inline? cppreference
+inline const nullopt_t nullopt{}; /// inline? cppreference
 
 struct in_place_t {};
-inline const in_place_t in_place{};    /// inline? cppreference
+inline const in_place_t in_place{}; /// inline? cppreference
 
 template <typename T, bool trivial = std::is_trivially_destructible_v<T>>
 struct base {
@@ -15,7 +15,8 @@ struct base {
   constexpr base(nullopt_t) {}
 
   template <typename... Args>
-  constexpr explicit base(in_place_t, Args&&... args) : is_present{true}, data(std::forward<Args>(args)...) {}
+  constexpr explicit base(in_place_t, Args&&... args)
+      : is_present{true}, data(std::forward<Args>(args)...) {}
 
   bool is_present{false};
   union {
@@ -52,7 +53,8 @@ struct base<T, true> {
   constexpr base(nullopt_t) {}
 
   template <typename... Args>
-  constexpr explicit base(in_place_t, Args&&... args) : is_present{true}, data(std::forward<Args>(args)...) {}
+  constexpr explicit base(in_place_t, Args&&... args)
+      : is_present{true}, data(std::forward<Args>(args)...) {}
 
   bool is_present{false};
   union {
