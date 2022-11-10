@@ -40,12 +40,13 @@ struct base {
 
 template <typename T>
 struct base<T, true> {
-  base() : is_present{false}, dummy(0) {}
+  constexpr base() : is_present{false}, dummy(0) {}
 
-  base(T x) : is_present{true}, data{std::move(x)} {}
+  constexpr base(T x) : is_present{true}, data{std::move(x)} {}
 
   template <typename... Args>
-  base(Args&&... args) : is_present{true}, data(std::forward<Args>(args)...) {}
+  constexpr base(Args&&... args)
+      : is_present{true}, data(std::forward<Args>(args)...) {}
 
   bool is_present;
   union {
@@ -54,7 +55,7 @@ struct base<T, true> {
   };
 
   template <typename... Args>
-  void emplace(Args&&... args) {
+  constexpr void emplace(Args&&... args) {
     reset();
     new (&data) T(std::forward<Args>(args)...);
     is_present = true;
@@ -67,20 +68,48 @@ struct base<T, true> {
     is_present = false;
   }
 
-  ~base() = default;
+  /// ~base() = default;
 };
 
-template <typename T, bool trivial = std::is_trivially_copy_assignable_v<T>>
-struct trivial_copy_assign_base : base<T> {
+template <typename T, bool trivial = std::is_trivially_copy_constructible_v<T>>
+struct trivial_copy_constructable_base : base<T> {
   using base<T>::base;
-  trivial_copy_assign_base(const trivial_copy_assign_base& other)
+  constexpr trivial_copy_constructable_base(
+      const trivial_copy_constructable_base& other)
       : base<T>() { ///////////!!!!!!!!!!!!!!!!!!!!!!
     if (other.is_present) {
       std::construct_at(&this->data, other.data);
       this->is_present = true;
     }
   }
-  trivial_copy_assign_base(trivial_copy_assign_base&&) = default;
+  constexpr trivial_copy_constructable_base(trivial_copy_constructable_base&&) =
+      default;
+  trivial_copy_constructable_base&
+  operator=(const trivial_copy_constructable_base& other) = default;
+  trivial_copy_constructable_base&
+  operator=(trivial_copy_constructable_base&& other) = default;
+};
+
+template <typename T>
+struct trivial_copy_constructable_base<T, true> : base<T> {
+  using base<T>::base;
+  constexpr trivial_copy_constructable_base(
+      const trivial_copy_constructable_base&) = default;
+  constexpr trivial_copy_constructable_base(trivial_copy_constructable_base&&) =
+      default;
+  trivial_copy_constructable_base&
+  operator=(const trivial_copy_constructable_base&) = default;
+  trivial_copy_constructable_base&
+  operator=(trivial_copy_constructable_base&&) = default;
+};
+
+template <typename T, bool trivial = std::is_trivially_copy_constructible_v<T>&&
+                          std::is_trivially_copy_assignable_v<T>>
+struct trivial_copy_assign_base : trivial_copy_constructable_base<T> {
+  using trivial_copy_constructable_base<T>::trivial_copy_constructable_base;
+  constexpr trivial_copy_assign_base(const trivial_copy_assign_base& other) =
+      default;
+  constexpr trivial_copy_assign_base(trivial_copy_assign_base&&) = default;
   trivial_copy_assign_base& operator=(const trivial_copy_assign_base& other) {
     if (this->is_present) {
       if (other.is_present) {
@@ -103,26 +132,54 @@ struct trivial_copy_assign_base : base<T> {
 };
 
 template <typename T>
-struct trivial_copy_assign_base<T, true> : base<T> {
-  using base<T>::base;
-  trivial_copy_assign_base(const trivial_copy_assign_base&) = default;
-  trivial_copy_assign_base(trivial_copy_assign_base&&) = default;
+struct trivial_copy_assign_base<T, true> : trivial_copy_constructable_base<T> {
+  using trivial_copy_constructable_base<T>::trivial_copy_constructable_base;
+  constexpr trivial_copy_assign_base(const trivial_copy_assign_base&) = default;
+  constexpr trivial_copy_assign_base(trivial_copy_assign_base&&) = default;
   trivial_copy_assign_base&
   operator=(const trivial_copy_assign_base&) = default;
   trivial_copy_assign_base& operator=(trivial_copy_assign_base&&) = default;
 };
 
-template <typename T, bool trivial = std::is_trivially_move_assignable_v<T>>
-struct trivial_move_assign_base : trivial_copy_assign_base<T> {
+template <typename T, bool trivial = std::is_trivially_move_constructible_v<T>>
+struct trivial_move_constructable_base : trivial_copy_assign_base<T> {
   using trivial_copy_assign_base<T>::trivial_copy_assign_base;
-
-  trivial_move_assign_base(const trivial_move_assign_base&) = default;
-  trivial_move_assign_base(trivial_move_assign_base&& other) {
+  constexpr trivial_move_constructable_base(
+      const trivial_move_constructable_base&) = default;
+  constexpr trivial_move_constructable_base(
+      trivial_move_constructable_base&& other) {
     if (other.is_present) {
       std::construct_at(&this->data, std::move(other.data));
       this->is_present = true;
     }
   }
+  trivial_move_constructable_base&
+  operator=(const trivial_move_constructable_base&) = default;
+  trivial_move_constructable_base&
+  operator=(trivial_move_constructable_base&& other) = default;
+};
+
+template <typename T>
+struct trivial_move_constructable_base<T, true> : trivial_copy_assign_base<T> {
+  using trivial_copy_assign_base<T>::trivial_copy_assign_base;
+  constexpr trivial_move_constructable_base(
+      const trivial_move_constructable_base&) = default;
+  constexpr trivial_move_constructable_base(trivial_move_constructable_base&&) =
+      default;
+  trivial_move_constructable_base&
+  operator=(const trivial_move_constructable_base&) = default;
+  trivial_move_constructable_base&
+  operator=(trivial_move_constructable_base&&) = default;
+};
+
+template <typename T, bool trivial = std::is_trivially_move_constructible_v<T>&&
+                          std::is_trivially_move_assignable_v<T>>
+struct trivial_move_assign_base : trivial_move_constructable_base<T> {
+  using trivial_move_constructable_base<T>::trivial_move_constructable_base;
+
+  constexpr trivial_move_assign_base(const trivial_move_assign_base&) = default;
+  constexpr trivial_move_assign_base(trivial_move_assign_base&& other) =
+      default;
 
   trivial_move_assign_base&
   operator=(const trivial_move_assign_base&) = default;
@@ -145,20 +202,21 @@ struct trivial_move_assign_base : trivial_copy_assign_base<T> {
 };
 
 template <typename T>
-struct trivial_move_assign_base<T, true> : trivial_copy_assign_base<T> {
-  using trivial_copy_assign_base<T>::trivial_copy_assign_base;
-  trivial_move_assign_base(const trivial_move_assign_base&) = default;
-  trivial_move_assign_base(trivial_move_assign_base&&) = default;
+struct trivial_move_assign_base<T, true> : trivial_move_constructable_base<T> {
+  using trivial_move_constructable_base<T>::trivial_move_constructable_base;
+  constexpr trivial_move_assign_base(const trivial_move_assign_base&) = default;
+  constexpr trivial_move_assign_base(trivial_move_assign_base&&) = default;
   trivial_move_assign_base&
   operator=(const trivial_move_assign_base&) = default;
   trivial_move_assign_base& operator=(trivial_move_assign_base&&) = default;
 };
 
-template <typename T, bool enabled = std::is_copy_assignable_v<T>>
+template <typename T, bool enabled = std::is_copy_assignable_v<T>&&
+                          std::is_copy_constructible_v<T>>
 struct copy_assign_base {
   copy_assign_base() = default;
-  copy_assign_base(const copy_assign_base&) = delete;
-  copy_assign_base(copy_assign_base&&) = default;
+  constexpr copy_assign_base(const copy_assign_base&) = delete;
+  constexpr copy_assign_base(copy_assign_base&&) = default;
   copy_assign_base& operator=(const copy_assign_base&) = delete;
   copy_assign_base& operator=(copy_assign_base&&) = default;
 };
@@ -166,17 +224,18 @@ struct copy_assign_base {
 template <typename T>
 struct copy_assign_base<T, true> {
   copy_assign_base() = default;
-  copy_assign_base(const copy_assign_base&) = default;
-  copy_assign_base(copy_assign_base&&) = default;
+  constexpr copy_assign_base(const copy_assign_base&) = default;
+  constexpr copy_assign_base(copy_assign_base&&) = default;
   copy_assign_base& operator=(const copy_assign_base&) = default;
   copy_assign_base& operator=(copy_assign_base&&) = default;
 };
 
-template <typename T, bool enabled = std::is_move_assignable_v<T>>
+template <typename T, bool enabled = std::is_move_assignable_v<T>&&
+                          std::is_move_constructible_v<T>>
 struct move_assign_base {
   move_assign_base() = default;
-  move_assign_base(const move_assign_base&) = default;
-  move_assign_base(move_assign_base&&) = delete;
+  constexpr move_assign_base(const move_assign_base&) = default;
+  constexpr move_assign_base(move_assign_base&&) = delete;
   move_assign_base& operator=(const move_assign_base&) = default;
   move_assign_base& operator=(move_assign_base&&) = delete;
 };
@@ -184,8 +243,8 @@ struct move_assign_base {
 template <typename T>
 struct move_assign_base<T, true> {
   move_assign_base() = default;
-  move_assign_base(const move_assign_base&) = default;
-  move_assign_base(move_assign_base&&) = default;
+  constexpr move_assign_base(const move_assign_base&) = default;
+  constexpr move_assign_base(move_assign_base&&) = default;
   move_assign_base& operator=(const move_assign_base&) = default;
   move_assign_base& operator=(move_assign_base&&) = default;
 };
@@ -200,41 +259,37 @@ struct optional : trivial_move_assign_base<T>,
                   copy_assign_base<T>,
                   move_assign_base<T> {
   using trivial_move_assign_base<T>::trivial_move_assign_base;
-  // using trivial_move_assign_base<T>::trivial_copy_assign_base;
 
-  //  using copy_assign_base<T>::copy_assign_base;
-  //  using move_assign_base<T>::move_assign_base;
-
-  optional() = default;
-  optional(nullopt_t) {}
+  constexpr optional(){};
+  constexpr optional(nullopt_t) {}
 
   template <typename... Args>
-  optional(in_place_t, Args&&... args)
+  explicit constexpr optional(in_place_t, Args&&... args)
       : trivial_move_assign_base<T>(std::forward<Args>(args)...) {}
-  optional(const optional&) = default;
-  optional(optional&&) = default;
+  constexpr optional(const optional&) = default;
+  constexpr optional(optional&&) = default;
   optional& operator=(const optional&) = default;
   optional& operator=(optional&&) = default;
 
-  T& operator*() noexcept {
+  constexpr T& operator*() noexcept {
     return this->data;
   }
-  T const& operator*() const noexcept {
+  constexpr T const& operator*() const noexcept {
     return this->data;
   }
 
-  T* operator->() noexcept {
+  constexpr T* operator->() noexcept {
     return &this->data;
   }
-  T const* operator->() const noexcept {
+  constexpr T const* operator->() const noexcept {
     return &this->data;
   }
 
-  [[nodiscard]] bool has_value() const noexcept {
+  [[nodiscard]] constexpr bool has_value() const noexcept {
     return this->is_present;
   }
 
-  [[nodiscard]] explicit operator bool() const noexcept {
+  [[nodiscard]] explicit constexpr operator bool() const noexcept {
     return has_value();
   }
 
@@ -243,22 +298,22 @@ struct optional : trivial_move_assign_base<T>,
     return *this;
   }
 
-  void swap(optional& other) {
-    if (has_value() && other.has_value()) {
-      using std::swap;
-      swap(this->data, other.data);
-    } else if (has_value() && !other.has_value()) {
-      other = std::move(*this);
-      this->is_present = false;
-      this->data.~T();
-    } else if (!has_value() && other.has_value()) {
-      other.swap2(*this);
-    }
-  }
+  //  void swap(optional& other) {
+  //    if (has_value() && other.has_value()) {
+  //      using std::swap;
+  //      swap(this->data, other.data);
+  //    } else if (has_value() && !other.has_value()) {
+  //      other = std::move(*this);
+  //      this->is_present = false;
+  //      this->data.~T();
+  //    } else if (!has_value() && other.has_value()) {
+  //      other.swap2(*this);
+  //    }
+  //  }
 };
 
 template <typename T>
-bool operator==(optional<T> const& a, optional<T> const& b) {
+constexpr bool operator==(optional<T> const& a, optional<T> const& b) {
   if (bool(a) != bool(b))
     return false;
 
@@ -269,7 +324,7 @@ bool operator==(optional<T> const& a, optional<T> const& b) {
 }
 
 template <typename T>
-bool operator!=(optional<T> const& a, optional<T> const& b) {
+constexpr bool operator!=(optional<T> const& a, optional<T> const& b) {
   if (bool(a) != bool(b))
     return true;
 
@@ -280,7 +335,7 @@ bool operator!=(optional<T> const& a, optional<T> const& b) {
 }
 
 template <typename T>
-bool operator<(optional<T> const& a, optional<T> const& b) {
+constexpr bool operator<(optional<T> const& a, optional<T> const& b) {
   if (!bool(b))
     return false;
 
@@ -291,7 +346,7 @@ bool operator<(optional<T> const& a, optional<T> const& b) {
 }
 
 template <typename T>
-bool operator<=(optional<T> const& a, optional<T> const& b) {
+constexpr bool operator<=(optional<T> const& a, optional<T> const& b) {
   if (!bool(a))
     return true;
 
@@ -302,7 +357,7 @@ bool operator<=(optional<T> const& a, optional<T> const& b) {
 }
 
 template <typename T>
-bool operator>(optional<T> const& a, optional<T> const& b) {
+constexpr bool operator>(optional<T> const& a, optional<T> const& b) {
   if (!bool(a))
     return false;
 
@@ -313,7 +368,7 @@ bool operator>(optional<T> const& a, optional<T> const& b) {
 }
 
 template <typename T>
-bool operator>=(optional<T> const& a, optional<T> const& b) {
+constexpr bool operator>=(optional<T> const& a, optional<T> const& b) {
   if (!bool(b))
     return true;
 
@@ -322,42 +377,3 @@ bool operator>=(optional<T> const& a, optional<T> const& b) {
 
   return *a >= *b;
 }
-
-/*
-struct nullopt_t;
-
-struct in_place_t;
-
-template <typename T>
-class optional {
-public:
-   optional() noexcept;
-  constexpr optional(nullopt_t) noexcept;
-
-  constexpr optional(optional const&);
-  constexpr optional(optional&&);
-
-  optional& operator=(optional const&);
-  optional& operator=(optional&&);
-
-   optional(T value);
-
-  template <typename... Args>
-  explicit constexpr optional(in_place_t, Args&&... args);
-
-  optional& operator=(nullopt_t) noexcept;
-
-  constexpr explicit operator bool() const noexcept;
-
-  constexpr T& operator*() noexcept;
-  constexpr T const& operator*() const noexcept;
-
-  constexpr T* operator->() noexcept;
-  constexpr T const* operator->() const noexcept;
-
-  template <typename... Args>
-  void emplace(Args&&... args);
-
-  void reset();
-};
-*/
