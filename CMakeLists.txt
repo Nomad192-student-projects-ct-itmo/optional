@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(GTest REQUIRED)
 
-add_executable(tests tests.cpp test_object.cpp base.h copy.h move.h assign_base.h)
+add_executable(tests tests.cpp test_object.cpp base.h copy.h move.h assign_base.h construct_base.h)
 
 if (NOT MSVC)
   target_compile_options(tests PRIVATE -Wall -Wextra -Wshadow=compatible-local -Wno-sign-compare -pedantic)
