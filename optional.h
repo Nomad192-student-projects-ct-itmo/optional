@@ -12,6 +12,8 @@ struct optional : trivial_move_assign_base<T>,
 
   using trivial_move_assign_base<T>::trivial_move_assign_base;
 
+  constexpr optional() = default;
+  constexpr optional(nullopt_t) : trivial_move_assign_base<T>() {};
   constexpr explicit optional(T x)
       : trivial_move_assign_base<T>(in_place, std::move(x)){};
 
@@ -53,6 +55,19 @@ struct optional : trivial_move_assign_base<T>,
   [[nodiscard]] constexpr bool has_value() const noexcept {
     return this->is_present;
   }
+
+  void swap(optional& other) {
+     if (has_value() && other.has_value()) {
+       using std::swap;
+       swap(this->data, other.data);
+     } else if (has_value() && !other.has_value()) {
+       other = std::move(*this);
+       this->is_present = false;
+       this->data.~T();
+     } else if (!has_value() && other.has_value()) {
+       other.swap2(*this);
+     }
+   }
 };
 
 template <typename T>
