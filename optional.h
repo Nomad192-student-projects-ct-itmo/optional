@@ -1,7 +1,7 @@
 #pragma once
 
-#include "trivial.h"
 #include "enable.h"
+#include "trivial.h"
 
 template <typename T>
 struct optional : trivial_move_assign_base<T>,
