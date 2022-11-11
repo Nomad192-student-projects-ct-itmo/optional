@@ -12,7 +12,7 @@ struct optional : trivial_move_assign_base<T>,
 
   using trivial_move_assign_base<T>::trivial_move_assign_base;
 
-  constexpr optional() = default;
+  constexpr optional() : trivial_move_assign_base<T>(){};
   constexpr optional(nullopt_t) : trivial_move_assign_base<T>(){};
   constexpr explicit optional(T x)
       : trivial_move_assign_base<T>(in_place, std::move(x)){};
