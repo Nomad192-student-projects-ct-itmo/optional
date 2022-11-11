@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 template <typename T, bool enabled = std::is_copy_constructible_v<T>>
 struct copy_construct_base {
   copy_construct_base() = default;
