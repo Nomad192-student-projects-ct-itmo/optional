@@ -11,9 +11,7 @@ struct optional : trivial_move_assign_base<T>,
                   move_construct_base<T> {
 
   using trivial_move_assign_base<T>::trivial_move_assign_base;
-
-  constexpr optional() : trivial_move_assign_base<T>(){};
-  constexpr optional(nullopt_t) : trivial_move_assign_base<T>(){};
+  constexpr optional(nullopt_t) : optional() {};
   constexpr explicit optional(T x)
       : trivial_move_assign_base<T>(in_place, std::move(x)){};
 
@@ -62,8 +60,7 @@ struct optional : trivial_move_assign_base<T>,
       swap(this->data, other.data);
     } else if (has_value() && !other.has_value()) {
       other = std::move(*this);
-      this->is_present = false;
-      this->data.~T();
+      this->reset();
     } else if (!has_value() && other.has_value()) {
       other.swap2(*this);
     }
