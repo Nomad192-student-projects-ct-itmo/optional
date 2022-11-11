@@ -43,6 +43,17 @@ struct optional : trivial_move_assign_base<T>,
     this->reset();
     return *this;
   }
+
+  template <typename... Args>
+  constexpr void emplace(Args&&... args) {
+    this->reset();
+    new (&this->data) T(std::forward<Args>(args)...);
+    this->is_present = true;
+  }
+
+  [[nodiscard]] constexpr bool has_value() const noexcept {
+    return this->is_present;
+  }
 };
 
 template <typename T>

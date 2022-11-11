@@ -4,10 +4,10 @@
 #include <utility>
 
 struct nullopt_t {};
-inline const nullopt_t nullopt{}; /// inline? cppreference
+inline constexpr nullopt_t nullopt{};
 
 struct in_place_t {};
-inline const in_place_t in_place{}; /// inline? cppreference
+inline constexpr in_place_t in_place{};
 
 template <typename T, bool trivial = std::is_trivially_destructible_v<T>>
 struct base {
@@ -23,17 +23,6 @@ struct base {
     char dummy{};
     T data;
   };
-
-  template <typename... Args>
-  constexpr void emplace(Args&&... args) {
-    reset();
-    new (&data) T(std::forward<Args>(args)...);
-    is_present = true;
-  }
-
-  [[nodiscard]] constexpr bool has_value() const noexcept {
-    return this->is_present;
-  }
 
   constexpr void reset() {
     if (is_present) {
@@ -61,17 +50,6 @@ struct base<T, true> {
     char dummy{};
     T data;
   };
-
-  template <typename... Args>
-  constexpr void emplace(Args&&... args) {
-    reset();
-    new (&data) T(std::forward<Args>(args)...);
-    is_present = true;
-  }
-
-  [[nodiscard]] constexpr bool has_value() const noexcept {
-    return this->is_present;
-  }
 
   constexpr void reset() {
     is_present = false;
