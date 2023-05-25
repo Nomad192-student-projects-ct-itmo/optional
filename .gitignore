@@ -2,6 +2,7 @@
 *.user
 .idea
 *.cbp
+build/
 
 # Google tests
 googletest-build/
